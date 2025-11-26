@@ -156,7 +156,10 @@ class ScaleProvider extends ChangeNotifier {
     super.dispose();
   }
 
-  Future<void> takeStableMeasurement({Duration window = const Duration(seconds: 3)}) async {
+  Future<void> takeStableMeasurement({
+    Duration window = const Duration(seconds: 3),
+    Duration waitForBroadcast = const Duration(seconds: 12),
+  }) async {
     if (_session == null && _storedBroadcast != null) {
       await _connectStoredBroadcast();
     }
@@ -164,6 +167,17 @@ class ScaleProvider extends ChangeNotifier {
     capturing = true;
     _captureBuffer.clear();
     notifyListeners();
+
+    // Wait for first packet (scale may power on when user steps up)
+    final gotFirst = await _waitForFirstMeasurement(timeout: waitForBroadcast);
+    if (!gotFirst) {
+      capturing = false;
+      errorMessage = '저울 브로드캐스트를 받지 못했습니다. 체중계에 올라선 뒤 다시 시도하세요.';
+      notifyListeners();
+      return;
+    }
+
+    // Collect for stability window
     await Future.delayed(window);
     capturing = false;
     final stable = _stableFrom(_captureBuffer);
@@ -172,6 +186,14 @@ class ScaleProvider extends ChangeNotifier {
     }
     _captureBuffer.clear();
     notifyListeners();
+  }
+
+  Future<bool> _waitForFirstMeasurement({required Duration timeout}) async {
+    final deadline = DateTime.now().add(timeout);
+    while (_captureBuffer.isEmpty && DateTime.now().isBefore(deadline)) {
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+    return _captureBuffer.isNotEmpty;
   }
 
   Future<void> _connectStoredBroadcast() async {

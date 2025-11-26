@@ -47,8 +47,13 @@ class OkOkHandler implements ScaleHandler {
     if (m.isEmpty) return null;
 
     final name = _deviceName(result);
-    final supports =
+    final likelyName =
         name == 'NoName OkOk' || name == 'ADV' || name == 'Chipsea-BLE';
+    final hasVendorSig = _hasKey(m, _manufV20) ||
+        _hasKey(m, _manufV11) ||
+        _hasKey(m, _manufVF0) ||
+        _containsLowByteC0(m);
+    final supports = likelyName || hasVendorSig;
     if (!supports) return null;
 
     final variantName = () {

@@ -33,7 +33,7 @@ class BleScaleApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => UserProvider(storage)),
         ChangeNotifierProvider(create: (_) => HistoryProvider(storage)),
-        ChangeNotifierProvider(create: (_) => ScaleProvider(bleService)),
+        ChangeNotifierProvider(create: (_) => ScaleProvider(bleService, storage)),
       ],
       child: Consumer<UserProvider>(
         builder: (context, userProvider, _) {

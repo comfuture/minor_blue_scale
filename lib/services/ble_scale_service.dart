@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import '../models/measurement.dart';
+import '../models/stored_broadcast_scale.dart';
 import 'scale_connection.dart';
 import 'scale_handlers/generic_gatt_handler.dart';
 import 'scale_handlers/mi_scale_handler.dart';
@@ -102,5 +103,37 @@ class BleScaleService {
         await controller.close();
       },
     );
+  }
+
+  Future<ScaleConnection?> connectSavedBroadcast(StoredBroadcastScale saved) async {
+    final handler = handlers.firstWhere(
+      (h) => h.id == saved.handlerId,
+      orElse: () => handlers.first,
+    );
+
+    final adv = AdvertisementData(
+      advName: saved.displayName,
+      txPowerLevel: null,
+      appearance: null,
+      connectable: false,
+      manufacturerData: const {},
+      serviceData: const {},
+      serviceUuids: const [],
+    );
+    final device = BluetoothDevice.fromId(saved.remoteId);
+    final match = ScaleMatch(
+      result: ScanResult(
+        device: device,
+        advertisementData: adv,
+        rssi: 0,
+        timeStamp: DateTime.now(),
+      ),
+      handler: handler,
+      support: ScaleDeviceSupport(
+        displayName: saved.displayName,
+        linkMode: ScaleLinkMode.broadcastOnly,
+      ),
+    );
+    return _connectBroadcast(match);
   }
 }

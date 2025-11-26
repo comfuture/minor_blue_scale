@@ -45,6 +45,29 @@ class LocalStorageService {
 
   String? getLastUserId() => _prefsBox.get('lastUserId') as String?;
 
+  // ----- Last broadcast scale (for broadcast-only devices like OKOK) -----
+  Future<void> setLastBroadcastScale({
+    required String remoteId,
+    required String displayName,
+    required String handlerId,
+  }) async {
+    await _prefsBox.put('lastBroadcastScale', {
+      'remoteId': remoteId,
+      'displayName': displayName,
+      'handlerId': handlerId,
+    });
+  }
+
+  Map<String, dynamic>? getLastBroadcastScale() {
+    final raw = _prefsBox.get('lastBroadcastScale');
+    if (raw == null) return null;
+    return Map<String, dynamic>.from(raw as Map);
+  }
+
+  Future<void> clearLastBroadcastScale() async {
+    await _prefsBox.delete('lastBroadcastScale');
+  }
+
   // ----- Weights -----
   List<WeightEntry> getWeights(String userId) {
     final raw = _weightBox.get(userId, defaultValue: []) as List;

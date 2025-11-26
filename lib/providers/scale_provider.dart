@@ -7,14 +7,21 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../models/connection_status.dart';
 import '../models/measurement.dart';
+import '../models/stored_broadcast_scale.dart';
 import '../services/ble_scale_service.dart';
 import '../services/scale_connection.dart';
 import '../services/scale_handlers/scale_handler.dart';
+import '../services/local_storage_service.dart';
 
 class ScaleProvider extends ChangeNotifier {
   final BleScaleService ble;
+  final LocalStorageService storage;
 
-  ScaleProvider(this.ble);
+  StoredBroadcastScale? _storedBroadcast;
+
+  ScaleProvider(this.ble, this.storage) {
+    _loadStoredBroadcast();
+  }
 
   List<ScaleMatch> scanResults = [];
   ConnectionStatus status = ConnectionStatus.idle;
@@ -29,6 +36,7 @@ class ScaleProvider extends ChangeNotifier {
   StreamSubscription<BluetoothConnectionState>? _connSub;
   final List<_TimedMeasurement> _recent = [];
   final List<Measurement> _captureBuffer = [];
+  bool get hasStoredBroadcast => _storedBroadcast != null;
 
   Future<void> scan() async {
     final ok = await _ensurePermissions();
@@ -61,6 +69,7 @@ class ScaleProvider extends ChangeNotifier {
   }
 
   String? get connectedName => connectedMatch?.displayName ?? connectedDevice?.platformName;
+  String? get storedBroadcastName => _storedBroadcast?.displayName;
 
   Future<void> connect(ScaleMatch match) async {
     status = ConnectionStatus.connecting;
@@ -78,6 +87,19 @@ class ScaleProvider extends ChangeNotifier {
       _session = session;
       connectedMatch = session.match;
       connectedDevice = session.device;
+      if (session.match.linkMode == ScaleLinkMode.broadcastOnly) {
+        final remoteId = session.match.device.remoteId.str;
+        await storage.setLastBroadcastScale(
+          remoteId: remoteId,
+          displayName: session.match.displayName,
+          handlerId: session.match.handler.id,
+        );
+        _storedBroadcast = StoredBroadcastScale(
+          remoteId: remoteId,
+          displayName: session.match.displayName,
+          handlerId: session.match.handler.id,
+        );
+      }
 
       _connSub?.cancel();
       if (connectedDevice != null) {
@@ -135,6 +157,9 @@ class ScaleProvider extends ChangeNotifier {
   }
 
   Future<void> takeStableMeasurement({Duration window = const Duration(seconds: 3)}) async {
+    if (_session == null && _storedBroadcast != null) {
+      await _connectStoredBroadcast();
+    }
     if (_session == null) return;
     capturing = true;
     _captureBuffer.clear();
@@ -146,6 +171,44 @@ class ScaleProvider extends ChangeNotifier {
       liveMeasurement = stable;
     }
     _captureBuffer.clear();
+    notifyListeners();
+  }
+
+  Future<void> _connectStoredBroadcast() async {
+    final saved = _storedBroadcast;
+    if (saved == null) return;
+    status = ConnectionStatus.connecting;
+    notifyListeners();
+    try {
+      final session = await ble.connectSavedBroadcast(saved);
+      if (session == null) {
+        status = ConnectionStatus.error;
+        errorMessage = '저장된 저울에 연결하지 못했습니다.';
+        notifyListeners();
+        return;
+      }
+      _session = session;
+      connectedMatch = session.match;
+      connectedDevice = session.device;
+      _weightSub?.cancel();
+      status = ConnectionStatus.connected;
+      _weightSub = session.weightStream.listen((value) {
+        if (value != null) {
+          final now = DateTime.now();
+          _recent.add(_TimedMeasurement(now, value));
+          _recent.removeWhere((e) => now.difference(e.time) > const Duration(seconds: 5));
+          if (capturing) {
+            _captureBuffer.add(value);
+          }
+          liveMeasurement = value;
+        }
+        status = ConnectionStatus.connected;
+        notifyListeners();
+      });
+    } catch (e) {
+      status = ConnectionStatus.error;
+      errorMessage = '저장된 저울 연결 실패: $e';
+    }
     notifyListeners();
   }
 
@@ -179,6 +242,16 @@ class ScaleProvider extends ChangeNotifier {
     if (statuses[Permission.bluetoothConnect]?.isGranted != true) return false;
 
     return true;
+  }
+
+  void _loadStoredBroadcast() {
+    final raw = storage.getLastBroadcastScale();
+    if (raw == null) return;
+    _storedBroadcast = StoredBroadcastScale(
+      remoteId: raw['remoteId'] as String,
+      displayName: raw['displayName'] as String,
+      handlerId: raw['handlerId'] as String,
+    );
   }
 }
 

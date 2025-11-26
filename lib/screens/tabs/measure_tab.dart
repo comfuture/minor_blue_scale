@@ -216,7 +216,8 @@ class _ActionRow extends StatelessWidget {
     final scale = context.read<ScaleProvider>();
 
     final canSave = !user.isGuest && scale.liveMeasurement != null;
-    final isBroadcast = scale.connectedMatch?.linkMode == ScaleLinkMode.broadcastOnly;
+    final isBroadcastAvailable =
+        (scale.connectedMatch?.linkMode == ScaleLinkMode.broadcastOnly) || scale.hasStoredBroadcast;
 
     final buttons = <Widget>[
       Expanded(
@@ -252,11 +253,13 @@ class _ActionRow extends StatelessWidget {
       const SizedBox(width: 12),
     ];
 
-    if (scaleStatus == ConnectionStatus.connected && isBroadcast) {
+    if (isBroadcastAvailable) {
       buttons.addAll([
         Expanded(
           child: FilledButton.icon(
-            onPressed: scale.capturing ? null : () => scale.takeStableMeasurement(),
+            onPressed: (scale.capturing || scaleStatus == ConnectionStatus.connecting)
+                ? null
+                : () => scale.takeStableMeasurement(),
             icon: const Icon(Icons.podcasts),
             label: Text(scale.capturing ? '측정 중...' : '측정하기'),
           ),
@@ -264,9 +267,9 @@ class _ActionRow extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: () => scale.disconnect(),
+            onPressed: scaleStatus == ConnectionStatus.scanning ? null : () => scale.disconnect(),
             icon: const Icon(Icons.link_off),
-            label: const Text('연결 해제'),
+            label: const Text('중지'),
           ),
         ),
       ]);

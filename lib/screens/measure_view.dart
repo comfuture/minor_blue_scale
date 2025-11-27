@@ -1,29 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/connection_status.dart';
-import '../../models/measurement.dart';
-import '../../models/user_profile.dart';
-import '../../models/weight_entry.dart';
-import '../../providers/history_provider.dart';
-import '../../providers/scale_provider.dart';
-import '../../providers/user_provider.dart';
-import '../device_connection_screen.dart';
-import '../../services/scale_handlers/scale_handler.dart';
-import '../../theme/design_tokens.dart';
-import '../../utils/formatters.dart';
-import '../../utils/id.dart';
-import '../../utils/body_composition.dart';
+import '../models/connection_status.dart';
+import '../models/measurement.dart';
+import '../models/user_profile.dart';
+import '../models/weight_entry.dart';
+import '../providers/history_provider.dart';
+import '../providers/scale_provider.dart';
+import '../providers/user_provider.dart';
+import './device_connection_screen.dart';
+import '../services/scale_handlers/scale_handler.dart';
+import '../theme/design_tokens.dart';
+import '../utils/formatters.dart';
+import '../utils/id.dart';
+import '../utils/body_composition.dart';
 
-class MeasureTab extends StatefulWidget {
+class MeasureView extends StatefulWidget {
   final UserProfile user;
-  const MeasureTab({super.key, required this.user});
+  const MeasureView({super.key, required this.user});
 
   @override
-  State<MeasureTab> createState() => _MeasureTabState();
+  State<MeasureView> createState() => _MeasureViewState();
 }
 
-class _MeasureTabState extends State<MeasureTab> {
+class _MeasureViewState extends State<MeasureView> {
   @override
   Widget build(BuildContext context) {
     final scale = context.watch<ScaleProvider>();

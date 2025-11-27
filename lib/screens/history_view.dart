@@ -2,21 +2,21 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/user_profile.dart';
-import '../../models/weight_entry.dart';
-import '../../providers/history_provider.dart';
-import '../../theme/design_tokens.dart';
-import '../../utils/formatters.dart';
+import '../models/user_profile.dart';
+import '../models/weight_entry.dart';
+import '../providers/history_provider.dart';
+import '../theme/design_tokens.dart';
+import '../utils/formatters.dart';
 
-class HistoryTab extends StatefulWidget {
+class HistoryView extends StatefulWidget {
   final UserProfile user;
-  const HistoryTab({super.key, required this.user});
+  const HistoryView({super.key, required this.user});
 
   @override
-  State<HistoryTab> createState() => _HistoryTabState();
+  State<HistoryView> createState() => _HistoryViewState();
 }
 
-class _HistoryTabState extends State<HistoryTab> {
+class _HistoryViewState extends State<HistoryView> {
   @override
   Widget build(BuildContext context) {
     if (widget.user.isGuest) {

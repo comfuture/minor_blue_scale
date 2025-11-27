@@ -8,6 +8,7 @@ import '../../models/weight_entry.dart';
 import '../../providers/history_provider.dart';
 import '../../providers/scale_provider.dart';
 import '../../providers/user_provider.dart';
+import '../device_connection_screen.dart';
 import '../../services/scale_handlers/scale_handler.dart';
 import '../../theme/design_tokens.dart';
 import '../../utils/formatters.dart';
@@ -29,48 +30,40 @@ class _MeasureTabState extends State<MeasureTab> {
     final history = context.watch<HistoryProvider>();
     final last = history.entries.isNotEmpty ? history.entries.last : null;
 
-    return RefreshIndicator(
-      onRefresh: () async => scale.scan(),
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: DesignTokens.screenPadding,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _LiveWeightCard(
-              measurement: scale.liveMeasurement,
-              status: scale.status,
-              capturing: scale.capturing,
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: DesignTokens.screenPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _LiveWeightCard(
+            measurement: scale.liveMeasurement,
+            status: scale.status,
+            capturing: scale.capturing,
+          ),
+          const SizedBox(height: 14),
+          _ActionRow(user: widget.user, scaleStatus: scale.status),
+          const SizedBox(height: 14),
+          if (scale.errorMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                scale.errorMessage!,
+                style: const TextStyle(color: Colors.red),
+              ),
             ),
-            const SizedBox(height: 14),
-            _ActionRow(user: widget.user, scaleStatus: scale.status),
-            const SizedBox(height: 14),
-            if (scale.status == ConnectionStatus.scanning)
-              const _ScanningCard()
-            else if (scale.status != ConnectionStatus.connected &&
-                scale.scanResults.isNotEmpty)
-              _DeviceList(results: scale.scanResults),
-            if (scale.errorMessage != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 10),
-                child: Text(
-                  scale.errorMessage!,
-                  style: const TextStyle(color: Colors.red),
-                ),
+          const SizedBox(height: 12),
+          if (!widget.user.isGuest && last != null)
+            _LastRecordCard(entry: last, target: widget.user.targetWeight),
+          if (widget.user.isGuest)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text(
+                '게스트 모드에서는 기록이 저장되지 않습니다.',
+                style: TextStyle(color: Colors.grey.shade700),
               ),
-            const SizedBox(height: 12),
-            if (!widget.user.isGuest && last != null)
-              _LastRecordCard(entry: last, target: widget.user.targetWeight),
-            if (widget.user.isGuest)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text(
-                  '게스트 모드에서는 기록이 저장되지 않습니다.',
-                  style: TextStyle(color: Colors.grey.shade700),
-                ),
-              ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
@@ -281,7 +274,12 @@ class _ActionRow extends StatelessWidget {
                 ? null
                 : scaleStatus == ConnectionStatus.connected
                     ? () => scale.disconnect()
-                    : () => scale.scan(),
+                    : () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const DeviceConnectionScreen(),
+                          ),
+                        ),
             icon: Icon(scaleStatus == ConnectionStatus.connected ? Icons.link_off : Icons.refresh),
             label: Text(scaleStatus == ConnectionStatus.connected ? '연결 해제' : '다시 검색'),
           ),
@@ -301,61 +299,6 @@ BodyComposition _compositionFor(Measurement m, UserProfile user) =>
       gender: user.gender,
     );
 
-class _DeviceList extends StatelessWidget {
-  final List<ScaleMatch> results;
-  const _DeviceList({required this.results});
-
-  @override
-  Widget build(BuildContext context) {
-    final scale = context.read<ScaleProvider>();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('발견된 저울'),
-        const SizedBox(height: 10),
-        ...results.map<Widget>((r) {
-          final name = r.displayName;
-          final remoteId = r.result.device.remoteId.str;
-          return Card(
-            child: ListTile(
-              leading: const Icon(Icons.scale_outlined),
-              title: Text(name.isNotEmpty ? name : '이름 없는 기기'),
-              subtitle: Text(remoteId),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => scale.connect(r),
-            ),
-          );
-        }),
-      ],
-    );
-  }
-}
-
-class _ScanningCard extends StatelessWidget {
-  const _ScanningCard();
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(DesignTokens.radius),
-      ),
-      child: Row(
-        children: const [
-          SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(strokeWidth: 2.2),
-          ),
-          SizedBox(width: 12),
-          Text('주변 저울을 찾고 있습니다...'),
-        ],
-      ),
-    );
-  }
-}
 
 class _LastRecordCard extends StatelessWidget {
   final WeightEntry entry;

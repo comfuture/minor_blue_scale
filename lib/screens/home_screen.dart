@@ -7,6 +7,7 @@ import '../providers/history_provider.dart';
 import '../providers/scale_provider.dart';
 import '../providers/user_provider.dart';
 import '../theme/design_tokens.dart';
+import 'device_connection_screen.dart';
 import 'user_selection_screen.dart';
 import 'tabs/history_tab.dart';
 import 'tabs/measure_tab.dart';
@@ -32,19 +33,11 @@ class _HomeScreenState extends State<HomeScreen> {
     _maybeLoadHistory(user);
 
     final scale = context.watch<ScaleProvider>();
-    final connectedName = scale.connectedName;
 
     return Scaffold(
       appBar: AppBar(
         title: Text('${user.nickname}님'),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: _ConnectionChip(
-              status: scale.status,
-              deviceName: connectedName,
-            ),
-          ),
           IconButton(
             tooltip: '사용자 변경',
             icon: const Icon(Icons.switch_account),
@@ -75,21 +68,14 @@ class _HomeScreenState extends State<HomeScreen> {
           NavigationDestination(icon: Icon(Icons.timeline_outlined), label: '이력'),
         ],
       ),
-      floatingActionButton: _index == 0
-          ? FloatingActionButton.extended(
-              onPressed: () async {
-                if (scale.status == ConnectionStatus.connected) {
-                  await scale.disconnect();
-                  return;
-                }
-                await scale.scan();
-              },
-              icon: Icon(scale.status == ConnectionStatus.connected
-                  ? Icons.link_off
-                  : Icons.bluetooth_searching),
-              label: Text(scale.status == ConnectionStatus.connected ? '연결 해제' : '저울 검색'),
-            )
-          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: _ConnectionFab(
+        status: scale.status,
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const DeviceConnectionScreen()),
+        ),
+      ),
     );
   }
 
@@ -105,9 +91,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class _ConnectionChip extends StatelessWidget {
   final ConnectionStatus status;
-  final String? deviceName;
 
-  const _ConnectionChip({required this.status, this.deviceName});
+  const _ConnectionChip({required this.status});
 
   @override
   Widget build(BuildContext context) {
@@ -120,9 +105,6 @@ class _ConnectionChip extends StatelessWidget {
       case ConnectionStatus.connected:
         bg = colors.primary.withValues(alpha: 0.15);
         fg = colors.primary;
-        if (deviceName != null && deviceName!.isNotEmpty) {
-          text = '$text · $deviceName';
-        }
         break;
       case ConnectionStatus.scanning:
       case ConnectionStatus.connecting:
@@ -138,27 +120,62 @@ class _ConnectionChip extends StatelessWidget {
         fg = Colors.black87;
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(DesignTokens.smallRadius),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            status == ConnectionStatus.connected
-                ? Icons.bluetooth_connected
-                : status == ConnectionStatus.error
-                    ? Icons.error_outline
-                    : Icons.bluetooth_searching,
-            size: 16,
-            color: fg,
+    return Tooltip(
+      message: status.message,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 180),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(DesignTokens.smallRadius),
           ),
-          const SizedBox(width: 6),
-          Text(text, style: TextStyle(fontSize: 12, color: fg)),
-        ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                status == ConnectionStatus.connected
+                    ? Icons.bluetooth_connected
+                    : status == ConnectionStatus.error
+                        ? Icons.error_outline
+                        : Icons.bluetooth_searching,
+                size: 16,
+                color: fg,
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  text,
+                  style: TextStyle(fontSize: 12, color: fg),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  softWrap: false,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
+    );
+  }
+}
+
+class _ConnectionFab extends StatelessWidget {
+  final ConnectionStatus status;
+  final VoidCallback onTap;
+  const _ConnectionFab({required this.status, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton.extended(
+      onPressed: onTap,
+      elevation: 0,
+      backgroundColor: Colors.transparent,
+      splashColor: Colors.transparent,
+      highlightElevation: 0,
+      hoverElevation: 0,
+      shape: const StadiumBorder(),
+      label: _ConnectionChip(status: status),
     );
   }
 }

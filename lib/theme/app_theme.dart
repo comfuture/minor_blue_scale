@@ -4,13 +4,13 @@ class AppTheme {
   static const double cornerRadius = 18;
 
   static ThemeData light() {
-    const seed = Color(0xFF2AB0A1); // 차분한 민트톤 메인 컬러
+    const seed = Color(0xFF123067); // 깊은 군청색 메인 컬러
     final baseScheme = ColorScheme.fromSeed(
       seedColor: seed,
       brightness: Brightness.light,
       surfaceTint: seed,
     ).copyWith(
-      surface: const Color(0xFFF8FAFB),
+      surface: const Color(0xFFF5F7FC),
     );
 
     return ThemeData(

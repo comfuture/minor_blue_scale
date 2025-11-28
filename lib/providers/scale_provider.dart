@@ -188,6 +188,12 @@ class ScaleProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void cancelCapture() {
+    capturing = false;
+    _captureBuffer.clear();
+    notifyListeners();
+  }
+
   Future<bool> _waitForFirstMeasurement({required Duration timeout}) async {
     final deadline = DateTime.now().add(timeout);
     while (_captureBuffer.isEmpty && DateTime.now().isBefore(deadline)) {

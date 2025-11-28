@@ -84,4 +84,12 @@ class LocalStorageService {
     list.add(entry.toJson());
     await _weightBox.put(entry.userId, list);
   }
+
+  Future<void> removeWeight({required String userId, required String entryId}) async {
+    final list = List<Map<String, dynamic>>.from(
+      _weightBox.get(userId, defaultValue: []),
+    );
+    list.removeWhere((e) => (e['id'] as String?) == entryId);
+    await _weightBox.put(userId, list);
+  }
 }

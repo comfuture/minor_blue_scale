@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:minor_blue_scale/l10n/app_localizations.dart';
 
 import '../models/user_profile.dart';
 import '../models/weight_entry.dart';
@@ -19,11 +20,12 @@ class HistoryView extends StatefulWidget {
 class _HistoryViewState extends State<HistoryView> {
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (widget.user.isGuest) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Text('게스트 모드에서는 이력을 저장하지 않습니다.',
+          child: Text(l10n.historyGuestMessage,
               style: TextStyle(color: Colors.grey.shade700)),
         ),
       );
@@ -44,10 +46,10 @@ class _HistoryViewState extends State<HistoryView> {
           else
             _EmptyChartHint(onAdd: () {}),
           const SizedBox(height: 16),
-          const Text('기록 목록', style: TextStyle(fontWeight: FontWeight.w700)),
+          Text(l10n.historyListTitle, style: const TextStyle(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           if (entries.isEmpty)
-            Text('아직 기록이 없습니다.', style: TextStyle(color: Colors.grey.shade700))
+            Text(l10n.historyEmpty, style: TextStyle(color: Colors.grey.shade700))
           else
               ...entries.reversed.map(
                 (e) => Card(
@@ -57,7 +59,7 @@ class _HistoryViewState extends State<HistoryView> {
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(Formatters.dayWithTime.format(e.recordedAt)),
+                        Text(Formatters.dayWithTime(e.recordedAt, locale: l10n.localeName)),
                         const SizedBox(height: 4),
                         Wrap(
                           spacing: 8,
@@ -66,9 +68,11 @@ class _HistoryViewState extends State<HistoryView> {
                             if (e.bmi != null)
                               _metricChip('BMI', e.bmi!.toStringAsFixed(1)),
                             if (e.bodyFatPercent != null)
-                              _metricChip('체지방%', Formatters.percent(e.bodyFatPercent)),
+                              _metricChip(l10n.labelBodyFatPercent,
+                                  Formatters.percent(e.bodyFatPercent)),
                             if (e.musclePercent != null)
-                              _metricChip('골격근%', Formatters.percent(e.musclePercent)),
+                              _metricChip(l10n.labelMusclePercent,
+                                  Formatters.percent(e.musclePercent)),
                           ],
                         ),
                       ],
@@ -114,6 +118,7 @@ class _HistoryChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final spots = entries
         .map((e) => FlSpot(
               e.recordedAt.millisecondsSinceEpoch.toDouble(),
@@ -151,7 +156,7 @@ class _HistoryChart extends StatelessWidget {
                       return Padding(
                         padding: const EdgeInsets.only(top: 6),
                         child: Text(
-                          Formatters.day.format(date),
+                          Formatters.day(date, locale: l10n.localeName),
                           style: const TextStyle(fontSize: 11),
                         ),
                       );
@@ -180,7 +185,8 @@ class _HistoryChart extends StatelessWidget {
                         label: HorizontalLineLabel(
                           show: true,
                           alignment: Alignment.topRight,
-                          labelResolver: (_) => '목표 ${target!.toStringAsFixed(1)} kg',
+                          labelResolver: (_) =>
+                              l10n.chartGoalLabel(target!.toStringAsFixed(1)),
                           style: const TextStyle(color: Colors.orange),
                         ),
                       ),
@@ -201,6 +207,7 @@ class _StatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final latest = entries.isNotEmpty ? entries.last.weightKg : null;
     final latestFat = entries.isNotEmpty ? entries.last.bodyFatPercent : null;
     final avg = entries.isEmpty
@@ -212,14 +219,14 @@ class _StatsRow extends StatelessWidget {
 
     return Row(
       children: [
-        _StatChip(label: '최근', value: Formatters.weight(latest)),
+        _StatChip(label: l10n.statLatest, value: Formatters.weight(latest)),
         const SizedBox(width: 10),
-        _StatChip(label: '평균', value: Formatters.weight(avg)),
+        _StatChip(label: l10n.statAverage, value: Formatters.weight(avg)),
         const SizedBox(width: 10),
-        _StatChip(label: '체지방%', value: Formatters.percent(latestFat)),
+        _StatChip(label: l10n.statBodyFatPercent, value: Formatters.percent(latestFat)),
         const SizedBox(width: 10),
         if (target != null)
-          _StatChip(label: '목표', value: '${target!.toStringAsFixed(1)} kg'),
+          _StatChip(label: l10n.labelGoal, value: '${target!.toStringAsFixed(1)} kg'),
       ],
     );
   }
@@ -261,6 +268,7 @@ class _EmptyChartHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -270,11 +278,11 @@ class _EmptyChartHint extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Text('차트를 그릴 기록이 아직 없습니다.'),
+          Text(l10n.historyChartEmpty),
           const SizedBox(height: 8),
           OutlinedButton(
             onPressed: onAdd,
-            child: const Text('체중을 먼저 측정해 보세요'),
+            child: Text(l10n.historyChartEmptyCta),
           ),
         ],
       ),

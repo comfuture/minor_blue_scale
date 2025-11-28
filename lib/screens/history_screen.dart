@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:minor_blue_scale/l10n/app_localizations.dart';
 
 import '../models/user_profile.dart';
 import 'history_view.dart';
@@ -9,9 +10,14 @@ class HistoryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('이력')),
-      body: HistoryView(user: user),
+      appBar: AppBar(title: Text(l10n.historyTitle)),
+      body: SafeArea(
+        top: false,
+        bottom: true,
+        child: HistoryView(user: user),
+      ),
     );
   }
 }

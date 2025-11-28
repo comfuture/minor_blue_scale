@@ -1,3 +1,5 @@
+import 'package:minor_blue_scale/l10n/app_localizations.dart';
+
 enum Gender {
   male,
   female,
@@ -16,14 +18,14 @@ enum Gender {
 }
 
 extension GenderLabel on Gender {
-  String get label {
+  String label(AppLocalizations l10n) {
     switch (this) {
       case Gender.male:
-        return '남성';
+        return l10n.genderMale;
       case Gender.female:
-        return '여성';
+        return l10n.genderFemale;
       case Gender.none:
-        return '기타';
+        return l10n.genderOther;
     }
   }
 

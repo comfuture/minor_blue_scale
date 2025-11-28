@@ -7,6 +7,7 @@ import 'scale_handler.dart';
 class GenericGattHandler implements ScaleHandler {
   static final Guid weightServiceUuid = Guid('0000181d-0000-1000-8000-00805f9b34fb');
   static final Guid weightCharUuid = Guid('00002a9d-0000-1000-8000-00805f9b34fb');
+  static const fallbackDisplayName = 'BLE scale';
 
   static const _hints = [
     'scale',
@@ -31,7 +32,7 @@ class GenericGattHandler implements ScaleHandler {
     if (!looksLikeScale) return null;
 
     final name = _deviceName(result);
-    final display = name.isNotEmpty ? name : 'BLE 저울';
+    final display = name.isNotEmpty ? name : fallbackDisplayName;
     return ScaleDeviceSupport(
       displayName: display,
       linkMode: ScaleLinkMode.gatt,

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:minor_blue_scale/l10n/app_localizations.dart';
 
 import '../models/connection_status.dart';
 import '../models/measurement.dart';
@@ -12,6 +13,45 @@ import '../services/ble_scale_service.dart';
 import '../services/scale_connection.dart';
 import '../services/scale_handlers/scale_handler.dart';
 import '../services/local_storage_service.dart';
+
+enum ScaleErrorType {
+  scanPermission,
+  noScalesFound,
+  scanFailed,
+  noWeightCharacteristic,
+  connectFailed,
+  noBroadcast,
+  connectSaved,
+  connectSavedFailed,
+}
+
+class ScaleError {
+  final ScaleErrorType type;
+  final String? detail;
+
+  const ScaleError(this.type, {this.detail});
+
+  String message(AppLocalizations l10n) {
+    switch (type) {
+      case ScaleErrorType.scanPermission:
+        return l10n.errorScanPermission;
+      case ScaleErrorType.noScalesFound:
+        return l10n.errorNoScalesFound;
+      case ScaleErrorType.scanFailed:
+        return l10n.errorScanFailed(detail ?? '');
+      case ScaleErrorType.noWeightCharacteristic:
+        return l10n.errorNoWeightCharacteristic;
+      case ScaleErrorType.connectFailed:
+        return l10n.errorConnectFailed(detail ?? '');
+      case ScaleErrorType.noBroadcast:
+        return l10n.errorNoBroadcast;
+      case ScaleErrorType.connectSaved:
+        return l10n.errorConnectSaved;
+      case ScaleErrorType.connectSavedFailed:
+        return l10n.errorConnectSavedFailed(detail ?? '');
+    }
+  }
+}
 
 class ScaleProvider extends ChangeNotifier {
   final BleScaleService ble;
@@ -29,7 +69,7 @@ class ScaleProvider extends ChangeNotifier {
   BluetoothDevice? connectedDevice;
   Measurement? liveMeasurement;
   bool capturing = false;
-  String? errorMessage;
+  ScaleError? lastError;
 
   ScaleConnection? _session;
   StreamSubscription<Measurement?>? _weightSub;
@@ -41,25 +81,25 @@ class ScaleProvider extends ChangeNotifier {
   Future<void> scan() async {
     final ok = await _ensurePermissions();
     if (!ok) {
-      errorMessage = '블루투스 스캔 권한이 필요합니다.';
+      lastError = const ScaleError(ScaleErrorType.scanPermission);
       status = ConnectionStatus.error;
       notifyListeners();
       return;
     }
     status = ConnectionStatus.scanning;
-    errorMessage = null;
+    lastError = null;
     liveMeasurement = null;
     notifyListeners();
     try {
       scanResults = await ble.scanForScales();
       if (scanResults.isEmpty) {
-        // fallback: 재검색 시 사용자에게 힌트 제공
-        errorMessage = '주변에서 저울을 찾지 못했습니다. 전원을 켜고 더 가까이에서 다시 시도하세요.';
+        // fallback: when scanning again, provide a hint to the user
+        lastError = const ScaleError(ScaleErrorType.noScalesFound);
       } else {
-        errorMessage = null;
+        lastError = null;
       }
     } catch (e) {
-      errorMessage = '스캔 실패: $e';
+      lastError = ScaleError(ScaleErrorType.scanFailed, detail: '$e');
       status = ConnectionStatus.error;
       notifyListeners();
       return;
@@ -70,16 +110,17 @@ class ScaleProvider extends ChangeNotifier {
 
   String? get connectedName => connectedMatch?.displayName ?? connectedDevice?.platformName;
   String? get storedBroadcastName => _storedBroadcast?.displayName;
+  String? errorText(AppLocalizations l10n) => lastError?.message(l10n);
 
   Future<void> connect(ScaleMatch match) async {
     status = ConnectionStatus.connecting;
-    errorMessage = null;
+    lastError = null;
     notifyListeners();
     try {
       final session = await ble.connect(match);
       if (session == null) {
         status = ConnectionStatus.error;
-        errorMessage = '체중 characteristic을 찾지 못했습니다.';
+        lastError = const ScaleError(ScaleErrorType.noWeightCharacteristic);
         notifyListeners();
         return;
       }
@@ -127,7 +168,7 @@ class ScaleProvider extends ChangeNotifier {
       });
     } catch (e) {
       status = ConnectionStatus.error;
-      errorMessage = '연결 실패: $e';
+      lastError = ScaleError(ScaleErrorType.connectFailed, detail: '$e');
     }
     notifyListeners();
   }
@@ -145,6 +186,7 @@ class ScaleProvider extends ChangeNotifier {
     connectedMatch = null;
     status = ConnectionStatus.idle;
     liveMeasurement = null;
+    lastError = null;
     notifyListeners();
   }
 
@@ -166,13 +208,14 @@ class ScaleProvider extends ChangeNotifier {
     if (_session == null) return;
     capturing = true;
     _captureBuffer.clear();
+    lastError = null;
     notifyListeners();
 
     // Wait for first packet (scale may power on when user steps up)
     final gotFirst = await _waitForFirstMeasurement(timeout: waitForBroadcast);
     if (!gotFirst) {
       capturing = false;
-      errorMessage = '저울 브로드캐스트를 받지 못했습니다. 체중계에 올라선 뒤 다시 시도하세요.';
+      lastError = const ScaleError(ScaleErrorType.noBroadcast);
       notifyListeners();
       return;
     }
@@ -206,12 +249,13 @@ class ScaleProvider extends ChangeNotifier {
     final saved = _storedBroadcast;
     if (saved == null) return;
     status = ConnectionStatus.connecting;
+    lastError = null;
     notifyListeners();
     try {
       final session = await ble.connectSavedBroadcast(saved);
       if (session == null) {
         status = ConnectionStatus.error;
-        errorMessage = '저장된 저울에 연결하지 못했습니다.';
+        lastError = const ScaleError(ScaleErrorType.connectSaved);
         notifyListeners();
         return;
       }
@@ -235,7 +279,7 @@ class ScaleProvider extends ChangeNotifier {
       });
     } catch (e) {
       status = ConnectionStatus.error;
-      errorMessage = '저장된 저울 연결 실패: $e';
+      lastError = ScaleError(ScaleErrorType.connectSavedFailed, detail: '$e');
     }
     notifyListeners();
   }
@@ -259,7 +303,7 @@ class ScaleProvider extends ChangeNotifier {
   Future<bool> _ensurePermissions() async {
     if (!Platform.isAndroid) return true;
 
-    // 안드로이드 12+: BLUETOOTH_SCAN/CONNECT, 이하 버전에서는 location 필요
+    // Android 12+: BLUETOOTH_SCAN/CONNECT; below that, location is required
     final statuses = await [
       Permission.bluetoothScan,
       Permission.bluetoothConnect,

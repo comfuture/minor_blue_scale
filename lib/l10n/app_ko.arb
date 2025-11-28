@@ -1,0 +1,97 @@
+{
+  "@@locale": "ko",
+  "appTitle": "블루투스 체중계",
+  "splashLoading": "앱을 준비하는 중...",
+
+  "statusIdle": "대기 중",
+  "statusScanning": "스캔 중",
+  "statusConnecting": "연결 중",
+  "statusConnected": "연결됨",
+  "statusError": "연결 오류",
+  "statusMeasuring": "측정 중...",
+  "statusWaitingValue": "값을 기다리는 중",
+
+  "guestNoSave": "게스트 모드에서는 기록이 저장되지 않습니다.",
+
+  "labelBodyFatPercent": "체지방%",
+  "labelBodyFatMass": "체지방량",
+  "labelMusclePercent": "골격근%",
+  "labelMuscleMass": "근육량",
+  "labelGoal": "목표",
+
+  "measureStop": "측정 중지",
+  "measureStart": "측정하기",
+  "measureRescan": "다시 검색",
+  "measureDisconnect": "연결 해제",
+
+  "goalOver": "+{difference} kg 초과",
+  "goalRemaining": "{difference} kg 남음",
+
+  "tooltipDeleteRecord": "기록 삭제",
+
+  "userTitle": "{name}님",
+  "tooltipViewHistory": "이력 보기",
+  "tooltipChangeUser": "사용자 변경",
+
+  "historyTitle": "이력",
+  "historyGuestMessage": "게스트 모드에서는 이력을 저장하지 않습니다.",
+  "historyListTitle": "기록 목록",
+  "historyEmpty": "아직 기록이 없습니다.",
+  "historyChartEmpty": "차트를 그릴 기록이 아직 없습니다.",
+  "historyChartEmptyCta": "체중을 먼저 측정해 보세요",
+
+  "statLatest": "최근",
+  "statAverage": "평균",
+  "statBodyFatPercent": "체지방%",
+  "chartGoalLabel": "목표 {weight} kg",
+
+  "deviceConnectionTitle": "장치 연결",
+  "scanButtonScanning": "스캔 중...",
+  "scanButtonLabel": "장치 검색",
+  "disconnect": "연결 해제",
+  "foundScalesTitle": "발견된 체중계",
+  "searchPrompt": "검색을 시작하면 주변의 블루투스 체중계를 표시합니다.",
+  "scanningNearby": "주변 체중계를 찾고 있습니다...",
+  "statusSubtitleConnected": "측정을 바로 시작할 수 있습니다.",
+  "statusSubtitleScanning": "주변 체중계를 검색하고 있습니다.",
+  "statusSubtitleConnecting": "선택한 기기에 연결 중입니다.",
+  "statusSubtitleIdle": "연결되지 않았습니다. 장치 검색을 시작하세요.",
+  "statusSubtitleError": "연결에 문제가 있습니다. 다시 시도해 주세요.",
+  "unnamedDevice": "이름 없는 기기",
+  "currentlyConnected": "현재 연결됨",
+
+  "addNewUserTitle": "새 사용자 추가",
+  "nicknameLabel": "닉네임",
+  "ageLabel": "나이",
+  "heightLabel": "키 (cm)",
+  "targetWeightLabel": "목표 체중 (선택)",
+  "register": "등록",
+  "fillAllFields": "닉네임, 나이, 키를 모두 입력해주세요.",
+  "userSelectionTitle": "사용자 선택",
+  "whoToManage": "누구의 체중을 관리할까요?",
+  "autoLoadHint": "마지막 선택 사용자는 자동으로 불러와져요.",
+  "measureAsGuest": "게스트 모드로 측정",
+  "newUser": "새 사용자",
+  "noUsersYet": "아직 등록된 사용자가 없어요.",
+  "addFirstUser": "첫 사용자 등록",
+  "measureAsGuestNow": "게스트로 바로 측정",
+
+  "guestLabel": "게스트",
+  "ageHeightFormat": "{age}세 · {height}cm",
+  "goalWeightLabel": "목표 {weight} kg",
+
+  "genderMale": "남성",
+  "genderFemale": "여성",
+  "genderOther": "기타",
+
+  "genericBleScaleName": "BLE 체중계",
+
+  "errorScanPermission": "블루투스 스캔 권한이 필요합니다.",
+  "errorNoScalesFound": "주변에서 체중계를 찾지 못했습니다. 전원을 켜고 더 가까이에서 다시 시도하세요.",
+  "errorScanFailed": "스캔 실패: {message}",
+  "errorNoWeightCharacteristic": "체중 characteristic을 찾지 못했습니다.",
+  "errorConnectFailed": "연결 실패: {message}",
+  "errorNoBroadcast": "체중계 브로드캐스트를 받지 못했습니다. 체중계에 올라선 뒤 다시 시도하세요.",
+  "errorConnectSaved": "저장된 체중계에 연결하지 못했습니다.",
+  "errorConnectSavedFailed": "저장된 체중계 연결 실패: {message}"
+}

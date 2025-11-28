@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:minor_blue_scale/l10n/app_localizations.dart';
 
 import '../models/connection_status.dart';
 import '../models/measurement.dart';
@@ -30,6 +31,7 @@ class _MeasureViewState extends State<MeasureView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final scale = context.watch<ScaleProvider>();
     final history = context.watch<HistoryProvider>();
     final last = history.entries.isNotEmpty ? history.entries.last : null;
@@ -52,11 +54,11 @@ class _MeasureViewState extends State<MeasureView> {
           const SizedBox(height: 14),
           _ActionRow(user: widget.user, scaleStatus: scale.status),
           const SizedBox(height: 14),
-          if (scale.errorMessage != null)
+          if (scale.errorText(l10n) != null)
             Padding(
               padding: const EdgeInsets.only(top: 10),
               child: Text(
-                scale.errorMessage!,
+                scale.errorText(l10n)!,
                 style: const TextStyle(color: Colors.red),
               ),
             ),
@@ -71,7 +73,7 @@ class _MeasureViewState extends State<MeasureView> {
             Padding(
               padding: const EdgeInsets.only(top: 12),
               child: Text(
-                '게스트 모드에서는 기록이 저장되지 않습니다.',
+                l10n.guestNoSave,
                 style: TextStyle(color: Colors.grey.shade700),
               ),
             ),
@@ -123,6 +125,7 @@ class _LiveWeightCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
@@ -154,7 +157,7 @@ class _LiveWeightCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 const Text('kg', style: TextStyle(color: Colors.white70)),
                 const SizedBox(height: 12),
-                _statusLabel(status, capturing),
+                _statusLabel(status, capturing, l10n),
                 const SizedBox(height: 14),
                 _MetricsRow(measurement: measurement),
               ],
@@ -165,12 +168,12 @@ class _LiveWeightCard extends StatelessWidget {
     );
   }
 
-  Widget _statusLabel(ConnectionStatus status, bool capturing) {
-    String text = status.message;
+  Widget _statusLabel(ConnectionStatus status, bool capturing, AppLocalizations l10n) {
+    String text = status.label(l10n);
     if (capturing) {
-      text = '측정 중...';
+      text = l10n.statusMeasuring;
     } else if (status == ConnectionStatus.connected && measurement == null) {
-      text = '값을 기다리는 중';
+      text = l10n.statusWaitingValue;
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -192,6 +195,7 @@ class _MetricsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final user = context.read<UserProvider>().selectedUser;
     if (measurement == null || user == null) {
       return const SizedBox.shrink();
@@ -206,10 +210,10 @@ class _MetricsRow extends StatelessWidget {
 
     final chips = [
       _metricChip('BMI', comp.bmi != null ? comp.bmi!.toStringAsFixed(1) : '--'),
-      _metricChip('체지방%', Formatters.percent(comp.bodyFatPercent)),
-      _metricChip('체지방량', Formatters.mass(comp.bodyFatKg)),
-      _metricChip('골격근%', Formatters.percent(comp.musclePercent)),
-      _metricChip('근육량', Formatters.mass(comp.muscleKg)),
+      _metricChip(l10n.labelBodyFatPercent, Formatters.percent(comp.bodyFatPercent)),
+      _metricChip(l10n.labelBodyFatMass, Formatters.mass(comp.bodyFatKg)),
+      _metricChip(l10n.labelMusclePercent, Formatters.percent(comp.musclePercent)),
+      _metricChip(l10n.labelMuscleMass, Formatters.mass(comp.muscleKg)),
     ];
 
     return Wrap(
@@ -236,6 +240,7 @@ class _ActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final scale = context.read<ScaleProvider>();
 
     final isBroadcastAvailable =
@@ -251,7 +256,7 @@ class _ActionRow extends StatelessWidget {
                 ? null
                 : () => scale.capturing ? scale.cancelCapture() : scale.takeStableMeasurement(),
             icon: Icon(scale.capturing ? Icons.stop_circle_outlined : Icons.podcasts),
-            label: Text(scale.capturing ? '측정 중지' : '측정하기'),
+            label: Text(scale.capturing ? l10n.measureStop : l10n.measureStart),
           ),
         ),
       ]);
@@ -270,7 +275,8 @@ class _ActionRow extends StatelessWidget {
                           ),
                         ),
             icon: Icon(scaleStatus == ConnectionStatus.connected ? Icons.link_off : Icons.refresh),
-            label: Text(scaleStatus == ConnectionStatus.connected ? '연결 해제' : '다시 검색'),
+            label: Text(
+                scaleStatus == ConnectionStatus.connected ? l10n.measureDisconnect : l10n.measureRescan),
           ),
         ),
       );
@@ -297,24 +303,25 @@ class _LastRecordCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final diff = target != null ? (entry.weightKg - target!) : null;
     final pills = <Widget>[
       if (diff != null)
         _metricPill(
-          '목표',
+          l10n.labelGoal,
           diff > 0
-              ? '+${diff.abs().toStringAsFixed(1)} kg 초과'
-              : '${diff.abs().toStringAsFixed(1)} kg 남음',
+              ? l10n.goalOver(diff.abs().toStringAsFixed(1))
+              : l10n.goalRemaining(diff.abs().toStringAsFixed(1)),
         ),
       if (entry.bmi != null) _metricPill('BMI', entry.bmi!.toStringAsFixed(1)),
       if (entry.bodyFatPercent != null)
-        _metricPill('체지방%', Formatters.percent(entry.bodyFatPercent)),
+        _metricPill(l10n.labelBodyFatPercent, Formatters.percent(entry.bodyFatPercent)),
       if (entry.bodyFatKg != null)
-        _metricPill('체지방량', Formatters.mass(entry.bodyFatKg)),
+        _metricPill(l10n.labelBodyFatMass, Formatters.mass(entry.bodyFatKg)),
       if (entry.musclePercent != null)
-        _metricPill('골격근%', Formatters.percent(entry.musclePercent)),
+        _metricPill(l10n.labelMusclePercent, Formatters.percent(entry.musclePercent)),
       if (entry.muscleKg != null)
-        _metricPill('근육량', Formatters.mass(entry.muscleKg)),
+        _metricPill(l10n.labelMuscleMass, Formatters.mass(entry.muscleKg)),
     ];
 
     return Card(
@@ -328,9 +335,11 @@ class _LastRecordCard extends StatelessWidget {
               '${entry.weightKg.toStringAsFixed(2)} kg',
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
             ),
-            subtitle: Text(Formatters.dayWithTime.format(entry.recordedAt)),
+            subtitle: Text(
+              Formatters.dayWithTime(entry.recordedAt, locale: l10n.localeName),
+            ),
             trailing: IconButton(
-              tooltip: '기록 삭제',
+              tooltip: l10n.tooltipDeleteRecord,
               icon: const Icon(Icons.delete_outline),
               onPressed: onDelete,
             ),

@@ -21,7 +21,7 @@ class UserProfile {
 
   factory UserProfile.guest() => const UserProfile(
         id: 'guest',
-        nickname: '게스트',
+        nickname: 'Guest',
         gender: Gender.none,
         age: 0,
         heightCm: 0,

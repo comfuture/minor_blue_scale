@@ -23,4 +23,10 @@ class HistoryProvider extends ChangeNotifier {
     await storage.addWeight(entry);
     notifyListeners();
   }
+
+  Future<void> remove(String entryId, String userId) async {
+    entries = entries.where((e) => e.id != entryId).toList();
+    await storage.removeWeight(userId: userId, entryId: entryId);
+    notifyListeners();
+  }
 }

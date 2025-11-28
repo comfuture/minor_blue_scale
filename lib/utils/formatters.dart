@@ -1,8 +1,13 @@
 import 'package:intl/intl.dart';
 
 class Formatters {
-  static final DateFormat day = DateFormat('M월 d일');
-  static final DateFormat dayWithTime = DateFormat('M월 d일 HH:mm');
+  static String day(DateTime date, {required String locale}) {
+    return DateFormat.MMMd(locale).format(date);
+  }
+
+  static String dayWithTime(DateTime date, {required String locale}) {
+    return DateFormat.MMMd(locale).add_Hm().format(date);
+  }
 
   static String weight(double? kg) {
     if (kg == null) return '--.-- kg';

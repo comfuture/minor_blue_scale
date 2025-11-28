@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:minor_blue_scale/l10n/app_localizations.dart';
 
 import '../models/connection_status.dart';
 import '../models/user_profile.dart';
@@ -23,6 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final user = context.watch<UserProvider>().selectedUser;
     if (user == null) {
       return const UserSelectionScreen(isFirstLaunch: true);
@@ -34,10 +36,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${user.nickname}님'),
+        title: Text(l10n.userTitle(user.isGuest ? l10n.guestLabel : user.nickname)),
         actions: [
           IconButton(
-            tooltip: '이력 보기',
+            tooltip: l10n.tooltipViewHistory,
             icon: const Icon(Icons.timeline_outlined),
             onPressed: () {
               Navigator.push(
@@ -49,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           IconButton(
-            tooltip: '사용자 변경',
+            tooltip: l10n.tooltipChangeUser,
             icon: const Icon(Icons.switch_account),
             onPressed: () async {
               await Navigator.push(
@@ -63,7 +65,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: MeasureView(user: user),
+      body: SafeArea(
+        top: false,
+        bottom: true,
+        child: MeasureView(user: user),
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: _ConnectionFab(
         status: scale.status,
@@ -92,6 +98,7 @@ class _ConnectionFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = Theme.of(context).colorScheme;
     Color bg = colors.primary;
     Color fg = Colors.white;
@@ -127,7 +134,7 @@ class _ConnectionFab extends StatelessWidget {
       foregroundColor: fg,
       elevation: 6,
       icon: Icon(icon),
-      label: Text(status.message),
+      label: Text(status.label(l10n)),
     );
   }
 }

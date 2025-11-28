@@ -4,7 +4,7 @@ class AppTheme {
   static const double cornerRadius = 18;
 
   static ThemeData light() {
-    const seed = Color(0xFF123067); // 깊은 군청색 메인 컬러
+    const seed = Color(0xFF123067); // Deep navy primary seed color
     final baseScheme = ColorScheme.fromSeed(
       seedColor: seed,
       brightness: Brightness.light,

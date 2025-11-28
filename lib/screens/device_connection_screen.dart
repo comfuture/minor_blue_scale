@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:minor_blue_scale/l10n/app_localizations.dart';
 
 import '../models/connection_status.dart';
 import '../providers/scale_provider.dart';
+import '../services/scale_handlers/generic_gatt_handler.dart';
 import '../services/scale_handlers/scale_handler.dart';
 import '../theme/design_tokens.dart';
 
@@ -12,21 +14,25 @@ class DeviceConnectionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scale = context.watch<ScaleProvider>();
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('장치 연결')),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          if (scale.status == ConnectionStatus.scanning) return;
-          await scale.scan();
-        },
-        child: ListView(
-          padding: DesignTokens.screenPadding,
-          children: [
+      appBar: AppBar(title: Text(l10n.deviceConnectionTitle)),
+      body: SafeArea(
+        top: false,
+        bottom: true,
+        child: RefreshIndicator(
+          onRefresh: () async {
+            if (scale.status == ConnectionStatus.scanning) return;
+            await scale.scan();
+          },
+          child: ListView(
+            padding: DesignTokens.screenPadding,
+            children: [
             _StatusCard(
               status: scale.status,
               deviceName: scale.connectedName,
-              errorMessage: scale.errorMessage,
+              errorMessage: scale.errorText(l10n),
             ),
             const SizedBox(height: 14),
             Row(
@@ -46,9 +52,9 @@ class DeviceConnectionScreen extends StatelessWidget {
                             ),
                           )
                         : const Icon(Icons.bluetooth_searching),
-                    label: Text(
-                      scale.status == ConnectionStatus.scanning ? '스캔 중...' : '장치 검색',
-                    ),
+                    label: Text(scale.status == ConnectionStatus.scanning
+                        ? l10n.scanButtonScanning
+                        : l10n.scanButtonLabel),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -58,7 +64,7 @@ class DeviceConnectionScreen extends StatelessWidget {
                         ? () => scale.disconnect()
                         : null,
                     icon: const Icon(Icons.link_off),
-                    label: const Text('연결 해제'),
+                    label: Text(l10n.disconnect),
                   ),
                 ),
               ],
@@ -77,26 +83,27 @@ class DeviceConnectionScreen extends StatelessWidget {
             ],
             if (scale.scanResults.isNotEmpty) ...[
               const SizedBox(height: 16),
-              const Text('발견된 저울', style: TextStyle(fontWeight: FontWeight.w700)),
+              Text(l10n.foundScalesTitle, style: const TextStyle(fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
               ...scale.scanResults.map((match) => _DeviceTile(match: match)),
             ] else if (scale.status != ConnectionStatus.scanning) ...[
               const SizedBox(height: 16),
               Text(
-                '검색을 시작하면 주변의 블루투스 체중계를 표시합니다.',
+                l10n.searchPrompt,
                 style: TextStyle(color: Colors.grey.shade700),
               ),
             ],
-            if (scale.errorMessage != null) ...[
+            if (scale.errorText(l10n) != null) ...[
               const SizedBox(height: 14),
               Text(
-                scale.errorMessage!,
+                scale.errorText(l10n)!,
                 style: const TextStyle(color: Colors.red),
               ),
             ],
           ],
         ),
       ),
+    ),
     );
   }
 }
@@ -114,17 +121,22 @@ class _StatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colors = Theme.of(context).colorScheme;
     Color bg = colors.surface;
     Color fg = Colors.black87;
-    String text = status.message;
+    String text = status.label(l10n);
+    String? localizedName = deviceName;
+    if (localizedName == GenericGattHandler.fallbackDisplayName) {
+      localizedName = l10n.genericBleScaleName;
+    }
 
     switch (status) {
       case ConnectionStatus.connected:
         bg = colors.primary.withValues(alpha: 0.12);
         fg = colors.primary;
-        if (deviceName != null && deviceName!.isNotEmpty) {
-          text = '$text · $deviceName';
+        if (localizedName != null && localizedName.isNotEmpty) {
+          text = '$text · $localizedName';
         }
         break;
       case ConnectionStatus.scanning:
@@ -167,7 +179,7 @@ class _StatusCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    _subtitle(status),
+                    _subtitle(status, l10n),
                     style: TextStyle(color: fg.withValues(alpha: 0.8)),
                   ),
                   if (errorMessage != null) ...[
@@ -183,18 +195,18 @@ class _StatusCard extends StatelessWidget {
     );
   }
 
-  String _subtitle(ConnectionStatus status) {
+  String _subtitle(ConnectionStatus status, AppLocalizations l10n) {
     switch (status) {
       case ConnectionStatus.connected:
-        return '측정을 바로 시작할 수 있습니다.';
+        return l10n.statusSubtitleConnected;
       case ConnectionStatus.scanning:
-        return '주변 저울을 검색하고 있습니다.';
+        return l10n.statusSubtitleScanning;
       case ConnectionStatus.connecting:
-        return '선택한 기기에 연결 중입니다.';
+        return l10n.statusSubtitleConnecting;
       case ConnectionStatus.idle:
-        return '연결되지 않았습니다. 장치 검색을 시작하세요.';
+        return l10n.statusSubtitleIdle;
       case ConnectionStatus.error:
-        return '연결에 문제가 있습니다. 다시 시도해 주세요.';
+        return l10n.statusSubtitleError;
     }
   }
 }
@@ -206,7 +218,11 @@ class _DeviceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scale = context.read<ScaleProvider>();
-    final name = match.displayName.isNotEmpty ? match.displayName : '이름 없는 기기';
+    final l10n = AppLocalizations.of(context)!;
+    String name = match.displayName.isNotEmpty ? match.displayName : l10n.unnamedDevice;
+    if (name == GenericGattHandler.fallbackDisplayName) {
+      name = l10n.genericBleScaleName;
+    }
     final remoteId = match.result.device.remoteId.str;
     return Card(
       child: ListTile(
@@ -239,10 +255,20 @@ class _ScanningBanner extends StatelessWidget {
             child: CircularProgressIndicator(strokeWidth: 2.2),
           ),
           SizedBox(width: 12),
-          Text('주변 저울을 찾고 있습니다...'),
+          _ScanningText(),
         ],
       ),
     );
+  }
+}
+
+class _ScanningText extends StatelessWidget {
+  const _ScanningText();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Text(l10n.scanningNearby);
   }
 }
 
@@ -253,15 +279,18 @@ class _ConnectedDeviceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final displayName =
+        name == GenericGattHandler.fallbackDisplayName ? l10n.genericBleScaleName : name;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('현재 연결됨', style: TextStyle(fontWeight: FontWeight.w700)),
+            Text(l10n.currentlyConnected, style: const TextStyle(fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
-            Text(name, style: const TextStyle(fontSize: 16)),
+            Text(displayName, style: const TextStyle(fontSize: 16)),
             if (remoteId != null) ...[
               const SizedBox(height: 4),
               Text(remoteId!, style: TextStyle(color: Colors.grey.shade700)),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:minor_blue_scale/l10n/app_localizations.dart';
 
 import '../models/gender.dart';
 import '../providers/user_provider.dart';
@@ -32,6 +33,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
   }
 
   void _openAddSheet() {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -53,9 +55,8 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('새 사용자 추가',
-                        style:
-                            TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                    Text(l10n.addNewUserTitle,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
                     IconButton(
                       icon: const Icon(Icons.close),
                       onPressed: () => Navigator.pop(context),
@@ -65,7 +66,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: _nameController,
-                  decoration: const InputDecoration(labelText: '닉네임'),
+                  decoration: InputDecoration(labelText: l10n.nicknameLabel),
                 ),
                 const SizedBox(height: 12),
                 Wrap(
@@ -73,7 +74,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                   children: Gender.values
                       .map(
                         (g) => ChoiceChip(
-                          label: Text(g.label),
+                          label: Text(g.label(l10n)),
                           selected: _gender == g,
                           onSelected: (_) => setState(() => _gender = g),
                         ),
@@ -84,26 +85,26 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
                 TextField(
                   controller: _ageController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: '나이'),
+                  decoration: InputDecoration(labelText: l10n.ageLabel),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _heightController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: '키 (cm)'),
+                  decoration: InputDecoration(labelText: l10n.heightLabel),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _targetController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: '목표 체중 (선택)'),
+                  decoration: InputDecoration(labelText: l10n.targetWeightLabel),
                 ),
                 const SizedBox(height: 18),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: _submitUser,
-                    child: const Text('등록'),
+                    child: Text(l10n.register),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -116,6 +117,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
   }
 
   Future<void> _submitUser() async {
+    final l10n = AppLocalizations.of(context)!;
     final navigator = Navigator.of(context);
     final isFirst = widget.isFirstLaunch;
     final name = _nameController.text.trim();
@@ -125,7 +127,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
 
     if (name.isEmpty || age == null || height == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('닉네임, 나이, 키를 모두 입력해주세요.')),
+        SnackBar(content: Text(l10n.fillAllFields)),
       );
       return;
     }
@@ -150,6 +152,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final userProvider = context.watch<UserProvider>();
     final users = userProvider.users;
 
@@ -157,19 +160,22 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
       appBar: widget.isFirstLaunch
           ? null
           : AppBar(
-              title: const Text('사용자 선택'),
+              title: Text(l10n.userSelectionTitle),
             ),
-      body: Padding(
-        padding: DesignTokens.screenPadding,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '누구의 체중을 관리할까요?',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+      body: SafeArea(
+        top: false,
+        bottom: true,
+        child: Padding(
+          padding: DesignTokens.screenPadding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.whoToManage,
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 8),
-            const Text('마지막 선택 사용자는 자동으로 불러와져요.'),
+            Text(l10n.autoLoadHint),
             const SizedBox(height: 18),
             Expanded(
               child: users.isEmpty
@@ -213,11 +219,12 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
               width: double.infinity,
               child: OutlinedButton(
                 onPressed: _onGuest,
-                child: const Text('게스트 모드로 측정'),
+                child: Text(l10n.measureAsGuest),
               ),
             ),
             const SizedBox(height: 10),
           ],
+          ),
         ),
       ),
     );
@@ -258,12 +265,22 @@ class _AddUserCard extends StatelessWidget {
             children: [
               Icon(Icons.add, size: 36),
               SizedBox(height: 8),
-              Text('새 사용자'),
+              _AddUserLabel(),
             ],
           ),
         ),
       ),
     );
+  }
+}
+
+class _AddUserLabel extends StatelessWidget {
+  const _AddUserLabel();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Text(l10n.newUser);
   }
 }
 
@@ -274,18 +291,19 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Text('아직 등록된 사용자가 없어요.'),
+        Text(l10n.noUsersYet),
         const SizedBox(height: 12),
         ElevatedButton.icon(
           onPressed: onAdd,
           icon: const Icon(Icons.person_add_alt),
-          label: const Text('첫 사용자 등록'),
+          label: Text(l10n.addFirstUser),
         ),
         const SizedBox(height: 8),
-        TextButton(onPressed: onGuest, child: const Text('게스트로 바로 측정')),
+        TextButton(onPressed: onGuest, child: Text(l10n.measureAsGuestNow)),
       ],
     );
   }

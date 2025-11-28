@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:minor_blue_scale/l10n/app_localizations.dart';
 
 import '../models/gender.dart';
 import '../models/user_profile.dart';
@@ -29,6 +30,7 @@ class UserCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -58,14 +60,17 @@ class UserCard extends StatelessWidget {
             ),
             const Spacer(),
             Text(
-              user.nickname,
+              user.isGuest ? l10n.guestLabel : user.nickname,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 6),
             Text(
               user.isGuest
-                  ? '게스트'
-                  : '${user.age}세 · ${user.heightCm.toStringAsFixed(0)}cm',
+                  ? l10n.guestLabel
+                  : l10n.ageHeightFormat(
+                      user.age.toString(),
+                      user.heightCm.toStringAsFixed(0),
+                    ),
               style: const TextStyle(color: Colors.black54),
             ),
             if (user.targetWeight != null)
@@ -75,7 +80,7 @@ class UserCard extends StatelessWidget {
                   children: [
                     Icon(Icons.flag, size: 16, color: Colors.grey.shade700),
                     const SizedBox(width: 4),
-                    Text('목표 ${user.targetWeight!.toStringAsFixed(1)} kg'),
+                    Text(l10n.goalWeightLabel(user.targetWeight!.toStringAsFixed(1))),
                   ],
                 ),
               ),

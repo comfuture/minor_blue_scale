@@ -1,0 +1,143 @@
+{
+  "@@locale": "en",
+  "appTitle": "Bluetooth Scale",
+  "splashLoading": "Preparing the app...",
+
+  "statusIdle": "Idle",
+  "statusScanning": "Scanning",
+  "statusConnecting": "Connecting",
+  "statusConnected": "Connected",
+  "statusError": "Connection error",
+  "statusMeasuring": "Measuring...",
+  "statusWaitingValue": "Waiting for values",
+
+  "guestNoSave": "Guest mode does not save records.",
+
+  "labelBodyFatPercent": "Body fat %",
+  "labelBodyFatMass": "Body fat mass",
+  "labelMusclePercent": "Muscle %",
+  "labelMuscleMass": "Muscle mass",
+  "labelGoal": "Goal",
+
+  "measureStop": "Stop measuring",
+  "measureStart": "Start measuring",
+  "measureRescan": "Scan again",
+  "measureDisconnect": "Disconnect",
+
+  "goalOver": "+{difference} kg over",
+  "@goalOver": {
+    "placeholders": {
+      "difference": {}
+    }
+  },
+  "goalRemaining": "{difference} kg to go",
+  "@goalRemaining": {
+    "placeholders": {
+      "difference": {}
+    }
+  },
+
+  "tooltipDeleteRecord": "Delete entry",
+
+  "userTitle": "{name}",
+  "@userTitle": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "tooltipViewHistory": "View history",
+  "tooltipChangeUser": "Switch user",
+
+  "historyTitle": "History",
+  "historyGuestMessage": "Guest mode does not store history.",
+  "historyListTitle": "Records",
+  "historyEmpty": "No records yet.",
+  "historyChartEmpty": "No data to draw the chart yet.",
+  "historyChartEmptyCta": "Measure your weight first",
+
+  "statLatest": "Latest",
+  "statAverage": "Average",
+  "statBodyFatPercent": "Body fat %",
+  "chartGoalLabel": "Goal {weight} kg",
+  "@chartGoalLabel": {
+    "placeholders": {
+      "weight": {}
+    }
+  },
+
+  "deviceConnectionTitle": "Connect Device",
+  "scanButtonScanning": "Scanning...",
+  "scanButtonLabel": "Search devices",
+  "disconnect": "Disconnect",
+  "foundScalesTitle": "Discovered scales",
+  "searchPrompt": "Start scanning to see nearby Bluetooth scales.",
+  "scanningNearby": "Searching for nearby scales...",
+  "statusSubtitleConnected": "You can start measuring now.",
+  "statusSubtitleScanning": "Searching for nearby scales.",
+  "statusSubtitleConnecting": "Connecting to the selected device.",
+  "statusSubtitleIdle": "Not connected. Start scanning for a scale.",
+  "statusSubtitleError": "There was a connection issue. Please try again.",
+  "unnamedDevice": "Unnamed device",
+  "currentlyConnected": "Currently connected",
+
+  "addNewUserTitle": "Add user",
+  "nicknameLabel": "Nickname",
+  "ageLabel": "Age",
+  "heightLabel": "Height (cm)",
+  "targetWeightLabel": "Target weight (optional)",
+  "register": "Save",
+  "fillAllFields": "Please enter nickname, age, and height.",
+  "userSelectionTitle": "Choose user",
+  "whoToManage": "Whose weight are we tracking?",
+  "autoLoadHint": "The last selected user loads automatically.",
+  "measureAsGuest": "Measure in guest mode",
+  "newUser": "New user",
+  "noUsersYet": "No users yet.",
+  "addFirstUser": "Add first user",
+  "measureAsGuestNow": "Measure as guest now",
+
+  "guestLabel": "Guest",
+  "ageHeightFormat": "{age} yrs · {height} cm",
+  "@ageHeightFormat": {
+    "placeholders": {
+      "age": {},
+      "height": {}
+    }
+  },
+  "goalWeightLabel": "Goal {weight} kg",
+  "@goalWeightLabel": {
+    "placeholders": {
+      "weight": {}
+    }
+  },
+
+  "genderMale": "Male",
+  "genderFemale": "Female",
+  "genderOther": "Other",
+
+  "genericBleScaleName": "BLE scale",
+
+  "errorScanPermission": "Bluetooth scan permission is required.",
+  "errorNoScalesFound": "No scales found nearby. Turn it on and try again closer.",
+  "errorScanFailed": "Scan failed: {message}",
+  "@errorScanFailed": {
+    "placeholders": {
+      "message": {}
+    }
+  },
+  "errorNoWeightCharacteristic": "Could not find a weight characteristic.",
+  "errorConnectFailed": "Connection failed: {message}",
+  "@errorConnectFailed": {
+    "placeholders": {
+      "message": {}
+    }
+  },
+  "errorNoBroadcast": "Did not receive a scale broadcast. Step on the scale and try again.",
+  "errorConnectSaved": "Could not connect to the saved scale.",
+  "errorConnectSavedFailed": "Failed to connect to the saved scale: {message}",
+  "@errorConnectSavedFailed": {
+    "placeholders": {
+      "message": {}
+    }
+  }
+}

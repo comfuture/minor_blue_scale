@@ -24,11 +24,19 @@ class MeasureView extends StatefulWidget {
 }
 
 class _MeasureViewState extends State<MeasureView> {
+  double? _lastSavedWeight;
+  int? _lastSavedImpedance;
+  DateTime? _lastSavedAt;
+
   @override
   Widget build(BuildContext context) {
     final scale = context.watch<ScaleProvider>();
     final history = context.watch<HistoryProvider>();
     final last = history.entries.isNotEmpty ? history.entries.last : null;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _maybeAutoSave(scale, history);
+    });
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -54,7 +62,11 @@ class _MeasureViewState extends State<MeasureView> {
             ),
           const SizedBox(height: 12),
           if (!widget.user.isGuest && last != null)
-            _LastRecordCard(entry: last, target: widget.user.targetWeight),
+            _LastRecordCard(
+              entry: last,
+              target: widget.user.targetWeight,
+              onDelete: () => history.remove(last.id, widget.user.id),
+            ),
           if (widget.user.isGuest)
             Padding(
               padding: const EdgeInsets.only(top: 12),
@@ -66,6 +78,39 @@ class _MeasureViewState extends State<MeasureView> {
         ],
       ),
     );
+  }
+
+  Future<void> _maybeAutoSave(ScaleProvider scale, HistoryProvider history) async {
+    final measurement = scale.liveMeasurement;
+    if (measurement == null || widget.user.isGuest) return;
+
+    final now = DateTime.now();
+    const weightEpsilon = 0.05;
+    final sameWeight =
+        _lastSavedWeight != null && (measurement.weightKg - _lastSavedWeight!).abs() < weightEpsilon;
+    final sameImp = _lastSavedImpedance != null && measurement.impedanceOhm == _lastSavedImpedance;
+    final recent = _lastSavedAt != null && now.difference(_lastSavedAt!) < const Duration(seconds: 8);
+
+    if (sameWeight && sameImp && recent) return;
+
+    final comp = _compositionFor(measurement, widget.user);
+    final entry = WeightEntry(
+      id: generateId(),
+      userId: widget.user.id,
+      weightKg: measurement.weightKg,
+      recordedAt: now,
+      deviceName: scale.connectedName,
+      impedanceOhm: measurement.impedanceOhm,
+      bmi: comp.bmi,
+      bodyFatPercent: comp.bodyFatPercent,
+      bodyFatKg: comp.bodyFatKg,
+      musclePercent: comp.musclePercent,
+      muscleKg: comp.muscleKg,
+    );
+    await history.add(entry);
+    _lastSavedWeight = measurement.weightKg;
+    _lastSavedImpedance = measurement.impedanceOhm;
+    _lastSavedAt = now;
   }
 }
 
@@ -94,20 +139,6 @@ class _LiveWeightCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.monitor_weight, color: Colors.white70),
-              const SizedBox(width: 8),
-              Text(
-                '실시간 체중',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
           Center(
             child: Column(
               children: [
@@ -205,64 +236,22 @@ class _ActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final history = context.read<HistoryProvider>();
     final scale = context.read<ScaleProvider>();
 
-    final canSave = !user.isGuest && scale.liveMeasurement != null;
     final isBroadcastAvailable =
         (scale.connectedMatch?.linkMode == ScaleLinkMode.broadcastOnly) || scale.hasStoredBroadcast;
 
-    final buttons = <Widget>[
-      Expanded(
-        child: ElevatedButton.icon(
-          onPressed: canSave
-              ? () async {
-                  final comp = _compositionFor(scale.liveMeasurement!, user);
-                  final entry = WeightEntry(
-                    id: generateId(),
-                    userId: user.id,
-                    weightKg: scale.liveMeasurement!.weightKg,
-                    recordedAt: DateTime.now(),
-                    deviceName: scale.connectedName,
-                    impedanceOhm: scale.liveMeasurement!.impedanceOhm,
-                    bmi: comp.bmi,
-                    bodyFatPercent: comp.bodyFatPercent,
-                    bodyFatKg: comp.bodyFatKg,
-                    musclePercent: comp.musclePercent,
-                    muscleKg: comp.muscleKg,
-                  );
-                  await history.add(entry);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('기록에 저장했습니다.')),
-                    );
-                  }
-                }
-              : null,
-          icon: const Icon(Icons.save_alt),
-          label: const Text('기록 저장'),
-        ),
-      ),
-      const SizedBox(width: 12),
-    ];
+    final buttons = <Widget>[];
 
     if (isBroadcastAvailable) {
       buttons.addAll([
         Expanded(
           child: FilledButton.icon(
-            onPressed: (scale.capturing || scaleStatus == ConnectionStatus.connecting)
+            onPressed: (scaleStatus == ConnectionStatus.connecting)
                 ? null
-                : () => scale.takeStableMeasurement(),
-            icon: const Icon(Icons.podcasts),
-            label: Text(scale.capturing ? '측정 중...' : '측정하기'),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: scaleStatus == ConnectionStatus.scanning ? null : () => scale.disconnect(),
-            icon: const Icon(Icons.link_off),
-            label: const Text('중지'),
+                : () => scale.capturing ? scale.cancelCapture() : scale.takeStableMeasurement(),
+            icon: Icon(scale.capturing ? Icons.stop_circle_outlined : Icons.podcasts),
+            label: Text(scale.capturing ? '측정 중지' : '측정하기'),
           ),
         ),
       ]);
@@ -303,71 +292,74 @@ BodyComposition _compositionFor(Measurement m, UserProfile user) =>
 class _LastRecordCard extends StatelessWidget {
   final WeightEntry entry;
   final double? target;
-  const _LastRecordCard({required this.entry, this.target});
+  final VoidCallback onDelete;
+  const _LastRecordCard({required this.entry, this.target, required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
     final diff = target != null ? (entry.weightKg - target!) : null;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('마지막 기록',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-            const SizedBox(height: 6),
-            Text(Formatters.dayWithTime.format(entry.recordedAt)),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Text(
-                  '${entry.weightKg.toStringAsFixed(2)} kg',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                if (diff != null)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: Chip(
-                      label: Text(
-                        diff > 0
-                            ? '+${diff.abs().toStringAsFixed(1)} kg 초과'
-                            : '${diff.abs().toStringAsFixed(1)} kg 남음',
-                      ),
-                    ),
-                  ),
-              ],
-            )
-            ,
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: [
-                if (entry.bmi != null) _metricPill('BMI', entry.bmi!.toStringAsFixed(1)),
-                if (entry.bodyFatPercent != null)
-                  _metricPill('체지방%', Formatters.percent(entry.bodyFatPercent)),
-                if (entry.bodyFatKg != null)
-                  _metricPill('체지방량', Formatters.mass(entry.bodyFatKg)),
-                if (entry.musclePercent != null)
-                  _metricPill('골격근%', Formatters.percent(entry.musclePercent)),
-                if (entry.muscleKg != null)
-                  _metricPill('근육량', Formatters.mass(entry.muscleKg)),
-              ],
-            ),
-          ],
+    final pills = <Widget>[
+      if (diff != null)
+        _metricPill(
+          '목표',
+          diff > 0
+              ? '+${diff.abs().toStringAsFixed(1)} kg 초과'
+              : '${diff.abs().toStringAsFixed(1)} kg 남음',
         ),
+      if (entry.bmi != null) _metricPill('BMI', entry.bmi!.toStringAsFixed(1)),
+      if (entry.bodyFatPercent != null)
+        _metricPill('체지방%', Formatters.percent(entry.bodyFatPercent)),
+      if (entry.bodyFatKg != null)
+        _metricPill('체지방량', Formatters.mass(entry.bodyFatKg)),
+      if (entry.musclePercent != null)
+        _metricPill('골격근%', Formatters.percent(entry.musclePercent)),
+      if (entry.muscleKg != null)
+        _metricPill('근육량', Formatters.mass(entry.muscleKg)),
+    ];
+
+    return Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            leading: const Icon(Icons.monitor_weight_outlined),
+            title: Text(
+              '${entry.weightKg.toStringAsFixed(2)} kg',
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+            ),
+            subtitle: Text(Formatters.dayWithTime.format(entry.recordedAt)),
+            trailing: IconButton(
+              tooltip: '기록 삭제',
+              icon: const Icon(Icons.delete_outline),
+              onPressed: onDelete,
+            ),
+          ),
+          if (pills.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: pills,
+              ),
+            ),
+        ],
       ),
     );
   }
 }
 
 Widget _metricPill(String label, String value) {
-  return Chip(
-    label: Text('$label $value'),
-    visualDensity: VisualDensity.compact,
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    decoration: BoxDecoration(
+      color: Colors.grey.shade200,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Text(
+      '$label $value',
+      style: const TextStyle(fontSize: 12),
+    ),
   );
 }
